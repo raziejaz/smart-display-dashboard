@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Display - Karachi Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    body {
+      background: linear-gradient(160deg, #0a0a0a, #1c1c1c, #000);
+      color: #eaeaea;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      margin: 0;
+      padding: 30px 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+      color: #ffcc00;
+      font-size: 1.6rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    #time {
+      font-size: 6rem;
+      font-weight: 700;
+      margin-bottom: 30px;
+      color: #ffffff;
+    }
+    .weather-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+      margin-bottom: 25px;
+    }
+    .market-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
+      width: 100%;
+      max-width: 1000px;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: all 0.3s ease-in-out;
+    }
+    .card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 10px 25px rgba(255, 204, 0, 0.3);
+    }
+    .card i {
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+      color: #ffcc00;
+    }
+    h2 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      color: #ffffff;
+      font-weight: 500;
+    }
+    .value {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #00eaff;
+    }
+    .forecast {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+      width: 100%;
+    }
+    .day {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.8rem;
+      color: #bdbdbd;
+    }
+    .day i {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+      color: #00bcd4;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌙 Karachi Smart Display</h1>
+  <div id="time">Loading time...</div>
+
+  <!-- Weather Row -->
+  <div class="weather-row">
+    <div class="card" id="weather">
+      <i class="fas fa-cloud-sun"></i>
+      <h2>Current Weather</h2>
+      <div class="value" id="current-weather">Loading...</div>
+      <div class="forecast" id="forecast"></div>
+    </div>
+  </div>
+
+  <!-- Market Row -->
+  <div class="market-row">
+    <div class="card" id="gold">
+      <i class="fas fa-coins"></i>
+      <h2>Gold Spot Price</h2>
+      <div class="value" id="gold-price">Loading...</div>
+    </div>
+
+    <div class="card" id="bitcoin">
+      <i class="fab fa-bitcoin"></i>
+      <h2>Bitcoin Price</h2>
+      <div class="value" id="btc-price">Loading...</div>
+    </div>
+
+    <div class="card" id="solana">
+      <i class="fas fa-bolt"></i>
+      <h2>Solana Price</h2>
+      <div class="value" id="sol-price">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchData() {
+      try {
+        // Weather API
+        const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=24.8607&longitude=67.0011&current_weather=true&daily=temperature_2m_max,temperature_2m_min,time,weathercode&timezone=auto');
+        const weatherData = await weatherRes.json();
+        document.getElementById('current-weather').textContent = `${weatherData.current_weather.temperature}°C`;
+
+        const forecastEl = document.getElementById('forecast');
+        forecastEl.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+          const maxT = weatherData.daily.temperature_2m_max[i];
+          const minT = weatherData.daily.temperature_2m_min[i];
+          const date = new Date(weatherData.daily.time[i]);
+          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+          const dayNum = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+          const icon = '<i class="fas fa-cloud"></i>';
+          forecastEl.innerHTML += `<div class='day'><span>${dayName}</span>${icon}<span>${maxT}°/${minT}°</span><span>${dayNum}</span></div>`;
+        }
+
+        // Gold price
+        const goldRes = await fetch('https://api.metals.live/v1/spot');
+        const goldData = await goldRes.json();
+        document.getElementById('gold-price').textContent = `$${goldData[0].gold}`;
+
+        // Bitcoin price
+        const btcRes = await fetch('https://api.coindesk.com/v1/bpi/currentprice/BTC.json');
+        const btcData = await btcRes.json();
+        document.getElementById('btc-price').textContent = `$${btcData.bpi.USD.rate_float.toFixed(0)}`;
+
+        // Solana price
+        const solRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+        const solData = await solRes.json();
+        document.getElementById('sol-price').textContent = `$${solData.solana.usd}`;
+      } catch (error) {
+        console.error('Error fetching data', error);
+      }
+    }
+
+    function updateTime() {
+      const now = new Date();
+      const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      document.getElementById('time').textContent = `${now.toLocaleTimeString('en-PK', options)}`;
+    }
+
+    fetchData();
+    updateTime();
+    setInterval(fetchData, 30000); // Refresh every 30 seconds
+    setInterval(updateTime, 1000); // Update time every second
+  </script>
+</body>
+</html>
